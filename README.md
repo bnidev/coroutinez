@@ -9,6 +9,27 @@ const std = @import("std");
 const azync = @import("azync");
 const Runtime = azync.Runtime;
 
+fn main() void {
+    const allocator = std.heap.page_allocator;
+    const rt = Runtime.init(allocator);
+    defer rt.deinit();
+
+    const future1 = rt.spawn(returnNumber, .{allocator});
+    const future2 = rt.spawn(returnSlice1, .{allocator});
+    const future3 = rt.spawn(returnSlice2, .{"hello", allocator});
+
+    // Make sure that you await an output type that matches the asynchronous executed function!
+    const result1 = future1.Await(i32);
+    const result2 = future2.Await([]const u8);
+    const result3 = future3.Await([]const u8);
+    defer allocator.free(result2);
+    defer allocator.free(result3);
+
+    std.debug.print("{d}", .{result1});
+    std.debug.print("{s}", .{result2});
+    std.debug.print("{s}", .{result3});
+}
+
 fn returnNumber() i32 {
     return 42;
 }
@@ -33,27 +54,6 @@ fn returnSlice2(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     _ = try str.appendSlice(" world!");
 
     return try str.toOwnedSlice();
-}
-
-fn main() void {
-    const allocator = std.heap.page_allocator;
-    const rt = Runtime.init(allocator);
-    defer rt.deinit();
-
-    const future1 = rt.spawn(returnNumber, .{allocator});
-    const future2 = rt.spawn(returnSlice1, .{allocator});
-    const future3 = rt.spawn(returnSlice2, .{"hello", allocator});
-
-    // Make sure that you await an output type that matches the asynchronous executed function!
-    const result1 = future1.Await(i32);
-    const result2 = future2.Await([]const u8);
-    const result3 = future3.Await([]const u8);
-    defer allocator.free(result2);
-    defer allocator.free(result3);
-
-    std.debug.print("{d}", .{result1});
-    std.debug.print("{s}", .{result2});
-    std.debug.print("{s}", .{result3});
 }
 ```
 
