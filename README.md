@@ -62,7 +62,7 @@ azync is a work-stealing runtime. That means it will spawn as many threads as lo
 ```zig
 const allocator = std.heap.page_allocator;
 
-const rt = Runtime.init(16, allocator);
+const rt = Runtime.initWithCores(16, allocator);
 defer rt.deinit();
 
 ```
