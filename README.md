@@ -1,6 +1,6 @@
 # azync
 
-azync is a runtime for managing asynchronous tasks in zig.
+azync is a runtime for running asynchronous tasks in zig.
 
 ### Example:
 
