@@ -120,7 +120,7 @@ pub const Future = struct {
     /// Awaits a future, blocking until the asynchronous operation is complete.
     /// Returns the result of the operation, which is of type `T`.
     /// The future must be created with a compatible type for `T`.
-    /// Make sure that the type `T` matches the output type of the asynchronous function.
+    /// Make sure that the type `T` matches the output type of the asynchronous executed function.
     /// After awaiting, the future is cleaned up and its resources are released.
     /// `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved.
     pub fn Await(self: *Future, T: type) T {
