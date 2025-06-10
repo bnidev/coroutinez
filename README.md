@@ -18,7 +18,7 @@ fn main() void {
     const future2 = rt.spawn(returnSlice1, .{allocator});
     const future3 = rt.spawn(returnSlice2, .{"hello", allocator});
 
-    // Make sure that you await an output type that matches the asynchronous executed function!
+    // Make sure that you await an output type that matches the output type of the executed function!
     const result1 = future1.Await(i32);
     const result2 = future2.Await([]const u8);
     const result3 = future3.Await([]const u8);
