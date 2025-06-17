@@ -102,8 +102,8 @@ pub const Runtime = struct {
         };
         self.mutex.lock();
         try self.task_queue.append(future);
-        self.cond.signal();
         self.mutex.unlock();
+        self.cond.signal();
         return future;
     }
 };
