@@ -76,15 +76,17 @@ pub const Runtime = struct {
     /// Spawns an asynchronous task using the provided function `F` and parameters `params`.
     /// Params must match the expected parameters of the function `F` and must be passed as a tuple.
     /// The spawn-method returns a `Future` that can be awaited to get the result of the asynchronous operation.
-    pub fn spawn(self: *Self, comptime F: anytype, comptime params: anytype) !*Future {
+    pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Future {
         if (!self.threads_started) {
             for (self.threads) |*thread| {
                 thread.* = try std.Thread.spawn(.{}, workerThread, .{self});
             }
             self.threads_started = true;
         }
-        const async_fn_wrapper = AsyncFnWrapper(F, params);
-        const gen_instance = async_fn_wrapper.create(self.allocator);
+        const ParamType = @TypeOf(params);
+        const async_fn_wrapper = AsyncFnWrapper(F, ParamType);
+        var gen_instance = async_fn_wrapper.create(self.allocator);
+        gen_instance.params = params;
 
         const wrapper_instance = try self.allocator.create(WrapperStruct);
 

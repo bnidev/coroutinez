@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // A generic wrapper for asynchronous functions that can be used with the runtime.
-pub fn AsyncFnWrapper(comptime F: anytype, comptime params: anytype) type {
+pub fn AsyncFnWrapper(comptime F: anytype, comptime ParamType: type) type {
     const tinfo = @typeInfo(@TypeOf(F));
     if (tinfo != .@"fn") {
         @compileError("AsyncFn(param) - param must be a function!");
@@ -14,7 +14,7 @@ pub fn AsyncFnWrapper(comptime F: anytype, comptime params: anytype) type {
             const instance = allocator.create(Self) catch unreachable;
 
             instance.* = Self{
-                .params = params,
+                .params = undefined,
                 .output = undefined,
                 .run_fn = &Self.run_thunk,
                 .destroy_fn = &Self.destroy_thunk,
@@ -41,7 +41,7 @@ pub fn AsyncFnWrapper(comptime F: anytype, comptime params: anytype) type {
             self.destroy();
         }
 
-        params: @TypeOf(params),
+        params: ParamType,
         output: @typeInfo(@TypeOf(F)).@"fn".return_type.?,
         run_fn: *const fn (*anyopaque) void,
         destroy_fn: *const fn (*anyopaque) void,

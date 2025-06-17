@@ -30,6 +30,7 @@ fn testfn3() ![]const u8 {
 
     return try str.toOwnedSlice();
 }
+
 // TESTS
 
 test "init and deinit Runtime" {
@@ -162,4 +163,32 @@ test "test all testfns two times and await them" {
     const result6 = future6.Await([]const u8);
     defer allocator.free(result6);
     std.debug.assert(std.mem.eql(u8, result6, "testfn3 world!"));
+}
+
+test "spawn testfn, testfn2 and tesfn3 20 times and await them, free memory of the resultsof testfn2 and testfn3" {
+    const allocator = std.testing.allocator;
+    var rt = try Runtime.init(allocator);
+    defer rt.deinit();
+
+    for (0..20) |i| {
+        const future1 = try rt.spawn(testfn, .{"task1"});
+        const n: i32 = @intCast(i);
+        const future2 = try rt.spawn(testfn2, .{ "task2 ", n, allocator });
+        const future3 = try rt.spawn(testfn3, .{});
+
+        const result1 = future1.Await(i32);
+        std.debug.assert(result1 == 31);
+
+        const result2 = future2.Await([]const u8);
+        defer allocator.free(result2);
+        const number_string = std.fmt.allocPrint(allocator, "{d}", .{n}) catch unreachable;
+        defer allocator.free(number_string);
+        const expected_string = std.mem.concat(allocator, u8, &.{ "task2 world!", number_string }) catch unreachable;
+        defer allocator.free(expected_string);
+        std.debug.assert(std.mem.eql(u8, result2, expected_string));
+
+        const result3 = future3.Await([]const u8);
+        defer allocator.free(result3);
+        std.debug.assert(std.mem.eql(u8, result3, "testfn3 world!"));
+    }
 }
