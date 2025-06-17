@@ -2,7 +2,7 @@
 
 azync is a runtime for running asynchronous tasks in zig.
 
-### Example:
+### Example
 
 ```zig
 const std = @import("std");
@@ -62,7 +62,7 @@ azync is a work-stealing runtime. That means it will spawn as many threads as lo
 ```zig
 const allocator = std.heap.page_allocator;
 
-const rt = Runtime.initWithCores(16, allocator);
+const rt = Runtime.initWithCores(allocator, 16);
 defer rt.deinit();
 
 ```

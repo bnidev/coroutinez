@@ -28,7 +28,7 @@ pub const Runtime = struct {
     }
 
     /// Initializes the runtime with a specific number of CPU cores.
-    pub fn initWithCores(cpu_count: usize, allocator: std.mem.Allocator) !Self {
+    pub fn initWithCores(allocator: std.mem.Allocator, cpu_count: usize) !Self {
         const cores = try std.Thread.getCpuCount();
         if (cpu_count == 0 or cpu_count > cores) return CpuCountError.InvalidCpuCount;
         return try Self.initRuntime(cores, allocator);
