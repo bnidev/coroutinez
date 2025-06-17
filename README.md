@@ -57,7 +57,7 @@ fn returnSlice2(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
 }
 ```
 
-azync is a work-stealing runtime. That means it will spawn as many threads as logical cores are available on your machine. On each of them it will run a worker function that will iterate over all tasks that you spawn by calling `Runtime.spawn` and pick the next pending task. Finished tasks will remain in the task queue as long as you call the `Await()`method on a spawned task (which is represented by a `*Future`). `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved. You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
+azync will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `Await()`method on a spawned task (which is represented by a `*Future`). `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved. You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
 
 ```zig
 const allocator = std.heap.page_allocator;
