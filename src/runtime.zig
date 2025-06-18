@@ -127,6 +127,8 @@ pub const Future = struct {
     /// Make sure that the type `T` matches the output type of the asynchronous executed function.
     /// After awaiting, the future is cleaned up and its resources are released.
     /// `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved.
+
+    // TODO: Avoid blocking of Await
     pub fn Await(self: *Future, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
