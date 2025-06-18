@@ -1,6 +1,8 @@
 # azync
 
-azync is a small experimental runtime for running asynchronous tasks in zig. **azync is still in development and is not ready for production yet**
+azync is a small experimental runtime for running asynchronous tasks in zig. 
+
+### azync is still in development and is not ready for production yet
 
 ### Example
 
