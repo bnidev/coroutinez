@@ -7,6 +7,8 @@ const CpuCountError = error{
     InvalidCpuCount,
 };
 
+// TODO: implement an event loop
+
 /// The `Runtime` struct provides a thread pool and task management for asynchronous execution.
 /// It allows spawning tasks that can be awaited, and manages the lifecycle of these tasks.
 /// The runtime can be initialized with a specific number of CPU cores, or it defaults to the number of available cores.
