@@ -14,9 +14,9 @@ fn main() void {
     const rt = Runtime.init(allocator);
     defer rt.deinit();
 
-    const future1 = rt.spawn(returnNumber, .{allocator});
-    const future2 = rt.spawn(returnSlice1, .{allocator});
-    const future3 = rt.spawn(returnSlice2, .{"hello", allocator});
+    const task1 = rt.spawn(returnNumber, .{allocator});
+    const task2 = rt.spawn(returnSlice1, .{allocator});
+    const task3 = rt.spawn(returnSlice2, .{"hello", allocator});
 
     // Make sure that you await an output type that matches the output type of the executed function!
     const result1 = task1.Await(i32);
