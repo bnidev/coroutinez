@@ -1,13 +1,11 @@
 const std = @import("std");
 const root = @import("root.zig");
-const AsyncFnWrapper = @import("wrapper.zig").AsyncFnWrapper;
+const TaskWrapper = @import("wrapper.zig").TaskWrapper;
 
 /// Represents an error that occurs when the CPU count is invalid.
 const CpuCountError = error{
     InvalidCpuCount,
 };
-
-// TODO: implement an event loop
 
 /// The `Runtime` struct provides a thread pool and task management for asynchronous execution.
 /// It allows spawning tasks that can be awaited, and manages the lifecycle of these tasks.
@@ -112,8 +110,8 @@ pub const Runtime = struct {
     }
 };
 
-/// Represents a future that can be awaited, encapsulating the result of an asynchronous operation.
-pub const Future = struct {
+/// Represents a task that can be joined, encapsulating the result of an asynchronous operation.
+pub const Task = struct {
     const FutSelf = @This();
     runtime: *Runtime,
     async_fn_wrapper: *WrapperStruct,
@@ -121,15 +119,13 @@ pub const Future = struct {
     cond: std.Thread.Condition = .{},
     status: TaskStatus = .Pending,
 
-    /// Awaits a future, blocking until the asynchronous operation is complete.
+    /// Joins a future, blocking until the operation is complete.
     /// Returns the result of the operation, which is of type `T`.
-    /// The future must be created with a compatible type for `T`.
-    /// Make sure that the type `T` matches the output type of the asynchronous executed function.
-    /// After awaiting, the future is cleaned up and its resources are released.
-    /// `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved.
+    /// The task must be created with a compatible type for `T`.
+    /// Make sure that the type `T` matches the output type of the executed function.
+    /// After joining, the task is cleaned up and its resources are released.
 
-    // TODO: Avoid blocking of Await
-    pub fn Await(self: *Future, T: type) T {
+    pub fn Join(self: *Future, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
             self.cond.wait(&self.mutex);
@@ -186,7 +182,7 @@ fn workerThread(runtime: *Runtime) void {
             break;
         }
 
-        var task: ?*Future = null;
+        var task: ?*Task = null;
 
         for (runtime.task_queue.items) |t| {
             if (t.status == .Pending) {
