@@ -1,10 +1,10 @@
 const std = @import("std");
 
 // A generic wrapper for asynchronous functions that can be used with the runtime.
-pub fn AsyncFnWrapper(comptime F: anytype, comptime ParamType: type) type {
+pub fn FnWrapper(comptime F: anytype, comptime ParamType: type) type {
     const tinfo = @typeInfo(@TypeOf(F));
     if (tinfo != .@"fn") {
-        @compileError("AsyncFn(param) - param must be a function!");
+        @compileError("Spawned task must be a function!");
     }
 
     return struct {
