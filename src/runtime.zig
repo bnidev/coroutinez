@@ -38,7 +38,7 @@ pub const Runtime = struct {
     fn initRuntime(cpu_count: usize, allocator: std.mem.Allocator) !Self {
         const stop = try allocator.create(bool);
         stop.* = false;
-        const task_queue = std.ArrayList(*Future).init(allocator);
+        const task_queue = std.ArrayList(*Task).init(allocator);
         const threads = try allocator.alloc(std.Thread, cpu_count);
         return Self{
             .allocator = allocator,
