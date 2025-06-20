@@ -1,7 +1,7 @@
 const std = @import("std");
 
-// A generic wrapper for asynchronous functions that can be used with the runtime.
-pub fn FnWrapper(comptime F: anytype, comptime ParamType: type) type {
+// A generic wrapper for tasks that can be used with the runtime.
+pub fn TaskWrapper(comptime F: anytype, comptime ParamType: type) type {
     const tinfo = @typeInfo(@TypeOf(F));
     if (tinfo != .@"fn") {
         @compileError("Spawned task must be a function!");
