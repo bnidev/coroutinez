@@ -44,8 +44,8 @@ test "init Runtime, spawn task, await it and deinit Runtime" {
     const allocator = std.testing.allocator;
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
-    const future = try rt.spawn(testfn, .{"testparam"});
-    const result = future.Await(i32);
+    const task = try rt.spawn(testfn, .{"testparam"});
+    const result = task.join(i32);
     std.debug.assert(result == 31);
 }
 
@@ -53,10 +53,10 @@ test "init Runtime, spawn two tasks with testfn, await them and deinit Runtime" 
     const allocator = std.testing.allocator;
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
-    const future1 = try rt.spawn(testfn, .{"testparam"});
-    const future2 = try rt.spawn(testfn, .{"testparam"});
-    const result1 = future1.Await(i32);
-    const result2 = future2.Await(i32);
+    const task1 = try rt.spawn(testfn, .{"testparam"});
+    const task2 = try rt.spawn(testfn, .{"testparam"});
+    const result1 = task1.join(i32);
+    const result2 = task2.join(i32);
     std.debug.assert(result2 == 31);
     std.debug.assert(result1 == 31);
 }
@@ -65,16 +65,16 @@ test "init Runtime, spawn task without awaiting it and deinit Runtime" {
     const allocator = std.testing.allocator;
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
-    const future = try rt.spawn(testfn, .{"testparam"});
-    _ = future;
+    const task = try rt.spawn(testfn, .{"testparam"});
+    _ = task;
 }
 
 test "testfn2" {
     const allocator = std.testing.allocator;
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
-    const future = try rt.spawn(testfn2, .{ "hello ", 42, allocator });
-    const result = future.Await([]const u8);
+    const task = try rt.spawn(testfn2, .{ "hello ", 42, allocator });
+    const result = task.join([]const u8);
     defer allocator.free(result);
     std.debug.assert(std.mem.eql(u8, result, "hello world!42"));
 }
@@ -84,14 +84,14 @@ test "spawn two tasks, await them and deinit Runtime" {
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
 
-    const future1 = try rt.spawn(testfn, .{"task1"});
+    const task1 = try rt.spawn(testfn, .{"task1"});
 
-    const future2 = try rt.spawn(testfn2, .{ "task2 ", 100, allocator });
+    const task2 = try rt.spawn(testfn2, .{ "task2 ", 100, allocator });
 
-    const result1 = future1.Await(i32);
+    const result1 = task1.join(i32);
     std.debug.assert(result1 == 31);
 
-    const result2 = future2.Await([]const u8);
+    const result2 = task2.join([]const u8);
     defer allocator.free(result2);
 
     std.debug.assert(std.mem.eql(u8, result2, "task2 world!100"));
@@ -101,8 +101,8 @@ test "testfn3" {
     const allocator = std.testing.allocator;
     var rt = try Runtime.init(allocator);
     defer rt.deinit();
-    const future = try rt.spawn(testfn3, .{});
-    const result = future.Await([]const u8);
+    const task = try rt.spawn(testfn3, .{});
+    const result = task.join([]const u8);
     defer allocator.free(result);
     std.debug.assert(std.mem.eql(u8, result, "testfn3 world!"));
 }
