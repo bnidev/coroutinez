@@ -112,20 +112,20 @@ pub const Runtime = struct {
 
 /// Represents a task that can be joined, encapsulating the result of an asynchronous operation.
 pub const Task = struct {
-    const FutSelf = @This();
+    const TaskSelf = @This();
     runtime: *Runtime,
     async_fn_wrapper: *WrapperStruct,
     mutex: std.Thread.Mutex = .{},
     cond: std.Thread.Condition = .{},
     status: TaskStatus = .Pending,
 
-    /// Joins a future, blocking until the operation is complete.
+    /// Joins a task, blocking until the operation is complete.
     /// Returns the result of the operation, which is of type `T`.
     /// The task must be created with a compatible type for `T`.
     /// Make sure that the type `T` matches the output type of the executed function.
     /// After joining, the task is cleaned up and its resources are released.
 
-    pub fn Join(self: *Future, T: type) T {
+    pub fn Join(self: *Task, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
             self.cond.wait(&self.mutex);
