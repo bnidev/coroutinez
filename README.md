@@ -6,8 +6,8 @@ coroutinez is a small runtime for running tasks on coroutines in zig.
 
 ```zig
 const std = @import("std");
-const azync = @import("azync");
-const Runtime = azync.Runtime;
+const azync = @import("coroutinez");
+const Runtime = coroutinez.Runtime;
 
 fn main() void {
     const allocator = std.heap.page_allocator;
@@ -19,9 +19,9 @@ fn main() void {
     const future3 = rt.spawn(returnSlice2, .{"hello", allocator});
 
     // Make sure that you await an output type that matches the output type of the executed function!
-    const result1 = future1.Await(i32);
-    const result2 = future2.Await([]const u8);
-    const result3 = future3.Await([]const u8);
+    const result1 = task1.Await(i32);
+    const result2 = task2.Await([]const u8);
+    const result3 = task3.Await([]const u8);
     defer allocator.free(result2);
     defer allocator.free(result3);
 
@@ -57,7 +57,7 @@ fn returnSlice2(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
 }
 ```
 
-azync will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `Await()`method on a spawned task (which is represented by a `*Future`). `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved. You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
+coroutinez will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `Join()`method on a spawned task (which is represented by a `*Task`). You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
 
 ```zig
 const allocator = std.heap.page_allocator;
