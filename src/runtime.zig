@@ -13,7 +13,7 @@ const CpuCountError = error{
 /// It handles task scheduling, execution, and cleanup, ensuring that resources are properly managed.
 pub const Runtime = struct {
     allocator: std.mem.Allocator,
-    task_queue: std.ArrayList(*Future),
+    task_queue: std.ArrayList(*Task),
     mutex: std.Thread.Mutex,
     cond: std.Thread.Condition,
     threads: []std.Thread,
@@ -97,8 +97,8 @@ pub const Runtime = struct {
             .output = @alignCast(@ptrCast(&gen_instance.output)),
             .wrapper_destroy_fn = @alignCast(@ptrCast(gen_instance.destroy_fn)),
         };
-        const future = try self.allocator.create(Future);
-        future.* = Future{
+        const task = try self.allocator.create(Task);
+        task.* = Task{
             .runtime = self,
             .async_fn_wrapper = wrapper_instance,
         };
@@ -106,7 +106,7 @@ pub const Runtime = struct {
         try self.task_queue.append(future);
         self.mutex.unlock();
         self.cond.signal();
-        return future;
+        return task;
     }
 };
 
@@ -125,7 +125,7 @@ pub const Task = struct {
     /// Make sure that the type `T` matches the output type of the executed function.
     /// After joining, the task is cleaned up and its resources are released.
 
-    pub fn Join(self: *Task, T: type) T {
+    pub fn join(self: *Task, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
             self.cond.wait(&self.mutex);
