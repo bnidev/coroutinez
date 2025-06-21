@@ -110,7 +110,7 @@ pub const Runtime = struct {
     }
 };
 
-/// Represents a task that can be joined, encapsulating the result of an asynchronous operation.
+/// Represents a task that can be joined, encapsulating the result of an operation that runs on a coroutine.
 pub const Task = struct {
     const TaskSelf = @This();
     runtime: *Runtime,
@@ -131,11 +131,11 @@ pub const Task = struct {
             self.cond.wait(&self.mutex);
         }
 
-        const output: *T = @alignCast(@ptrCast(self.async_fn_wrapper.output));
+        const output: *T = @alignCast(@ptrCast(self.task_wrapper.output));
         const result = output.*;
 
-        self.task_wrapper.wrapper_destroy_fn(self.async_fn_wrapper.self);
-        self.runtime.allocator.destroy(self.async_fn_wrapper);
+        self.task_wrapper.wrapper_destroy_fn(self.task_.self);
+        self.runtime.allocator.destroy(self.task_wrapper);
 
         for (self.runtime.task_queue.items, 0..) |item, idx| {
             if (item == self) {
