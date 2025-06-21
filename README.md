@@ -1,6 +1,6 @@
 # coroutinez
 
-coroutinez is a small runtime for running tasks on coroutines in zig.
+coroutinez is a small runtime for running tasks using coroutines in zig.
 
 ### Example
 
