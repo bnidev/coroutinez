@@ -75,8 +75,8 @@ pub const Runtime = struct {
 
     /// Spawns an asynchronous task using the provided function `F` and parameters `params`.
     /// Params must match the expected parameters of the function `F` and must be passed as a tuple.
-    /// The spawn-method returns a `Future` that can be awaited to get the result of the asynchronous operation.
-    pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Future {
+    /// The spawn-method returns a `Task` that can be awaited to get the result of the asynchronous operation.
+    pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Task {
         if (!self.threads_started) {
             for (self.threads) |*thread| {
                 thread.* = try std.Thread.spawn(.{}, workerThread, .{self});
@@ -103,7 +103,7 @@ pub const Runtime = struct {
             .async_fn_wrapper = wrapper_instance,
         };
         self.mutex.lock();
-        try self.task_queue.append(future);
+        try self.task_queue.append(task);
         self.mutex.unlock();
         self.cond.signal();
         return task;
