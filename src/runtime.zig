@@ -84,8 +84,8 @@ pub const Runtime = struct {
             self.threads_started = true;
         }
         const ParamType = @TypeOf(params);
-        const async_fn_wrapper = AsyncFnWrapper(F, ParamType);
-        var gen_instance = async_fn_wrapper.create(self.allocator);
+        const task_wrapper = TaskWrapper(F, ParamType);
+        var gen_instance = task_wrapper.create(self.allocator);
         gen_instance.params = params;
 
         const wrapper_instance = try self.allocator.create(WrapperStruct);
@@ -100,7 +100,7 @@ pub const Runtime = struct {
         const task = try self.allocator.create(Task);
         task.* = Task{
             .runtime = self,
-            .async_fn_wrapper = wrapper_instance,
+            .task_wrapper = wrapper_instance,
         };
         self.mutex.lock();
         try self.task_queue.append(task);
@@ -114,7 +114,7 @@ pub const Runtime = struct {
 pub const Task = struct {
     const TaskSelf = @This();
     runtime: *Runtime,
-    async_fn_wrapper: *WrapperStruct,
+    task_wrapper: *WrapperStruct,
     mutex: std.Thread.Mutex = .{},
     cond: std.Thread.Condition = .{},
     status: TaskStatus = .Pending,
@@ -134,7 +134,7 @@ pub const Task = struct {
         const output: *T = @alignCast(@ptrCast(self.async_fn_wrapper.output));
         const result = output.*;
 
-        self.async_fn_wrapper.wrapper_destroy_fn(self.async_fn_wrapper.self);
+        self.task_wrapper.wrapper_destroy_fn(self.async_fn_wrapper.self);
         self.runtime.allocator.destroy(self.async_fn_wrapper);
 
         for (self.runtime.task_queue.items, 0..) |item, idx| {
@@ -196,7 +196,7 @@ fn workerThread(runtime: *Runtime) void {
 
         if (task) |t| {
             t.mutex.lock();
-            t.async_fn_wrapper.run_fn(t.async_fn_wrapper.self);
+            t.task_wrapper.run_fn(t.task_wrapper.self);
             t.status = .Finished;
             t.mutex.unlock();
             t.cond.broadcast();
