@@ -1,21 +1,19 @@
 const std = @import("std");
 const root = @import("root.zig");
-const AsyncFnWrapper = @import("wrapper.zig").AsyncFnWrapper;
+const TaskWrapper = @import("task_wrapper.zig").TaskWrapper;
 
 /// Represents an error that occurs when the CPU count is invalid.
 const CpuCountError = error{
     InvalidCpuCount,
 };
 
-// TODO: implement an event loop
-
-/// The `Runtime` struct provides a thread pool and task management for asynchronous execution.
+/// The `Runtime` struct provides a thread pool and task management for execution of functions using coroutines.
 /// It allows spawning tasks that can be awaited, and manages the lifecycle of these tasks.
 /// The runtime can be initialized with a specific number of CPU cores, or it defaults to the number of available cores.
 /// It handles task scheduling, execution, and cleanup, ensuring that resources are properly managed.
 pub const Runtime = struct {
     allocator: std.mem.Allocator,
-    task_queue: std.ArrayList(*Future),
+    task_queue: std.ArrayList(*Task),
     mutex: std.Thread.Mutex,
     cond: std.Thread.Condition,
     threads: []std.Thread,
@@ -40,7 +38,7 @@ pub const Runtime = struct {
     fn initRuntime(cpu_count: usize, allocator: std.mem.Allocator) !Self {
         const stop = try allocator.create(bool);
         stop.* = false;
-        const task_queue = std.ArrayList(*Future).init(allocator);
+        const task_queue = std.ArrayList(*Task).init(allocator);
         const threads = try allocator.alloc(std.Thread, cpu_count);
         return Self{
             .allocator = allocator,
@@ -57,7 +55,7 @@ pub const Runtime = struct {
     /// It is important to call this method to avoid memory leaks and ensure that all resources are properly released.
     pub fn deinit(self: *Self) void {
         for (self.task_queue.items) |task| {
-            _ = task.Await(*anyopaque);
+            _ = task.join(*anyopaque);
         }
 
         if (self.threads_started) {
@@ -75,10 +73,10 @@ pub const Runtime = struct {
         self.task_queue.deinit();
     }
 
-    /// Spawns an asynchronous task using the provided function `F` and parameters `params`.
+    /// Spawns a task using the provided function `F` and parameters `params`.
     /// Params must match the expected parameters of the function `F` and must be passed as a tuple.
-    /// The spawn-method returns a `Future` that can be awaited to get the result of the asynchronous operation.
-    pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Future {
+    /// The spawn-method returns a `Task` that can be joined to get the result of the operation.
+    pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Task {
         if (!self.threads_started) {
             for (self.threads) |*thread| {
                 thread.* = try std.Thread.spawn(.{}, workerThread, .{self});
@@ -86,8 +84,8 @@ pub const Runtime = struct {
             self.threads_started = true;
         }
         const ParamType = @TypeOf(params);
-        const async_fn_wrapper = AsyncFnWrapper(F, ParamType);
-        var gen_instance = async_fn_wrapper.create(self.allocator);
+        const task_wrapper = TaskWrapper(F, ParamType);
+        var gen_instance = task_wrapper.create(self.allocator);
         gen_instance.params = params;
 
         const wrapper_instance = try self.allocator.create(WrapperStruct);
@@ -99,47 +97,43 @@ pub const Runtime = struct {
             .output = @alignCast(@ptrCast(&gen_instance.output)),
             .wrapper_destroy_fn = @alignCast(@ptrCast(gen_instance.destroy_fn)),
         };
-        const future = try self.allocator.create(Future);
-        future.* = Future{
+        const task = try self.allocator.create(Task);
+        task.* = Task{
             .runtime = self,
-            .async_fn_wrapper = wrapper_instance,
+            .task_wrapper = wrapper_instance,
         };
         self.mutex.lock();
-        try self.task_queue.append(future);
+        try self.task_queue.append(task);
         self.mutex.unlock();
         self.cond.signal();
-        return future;
+        return task;
     }
 };
 
-/// Represents a future that can be awaited, encapsulating the result of an asynchronous operation.
-pub const Future = struct {
-    const FutSelf = @This();
+/// Represents a task that can be joined, encapsulating the result of an operation that runs on a coroutine.
+pub const Task = struct {
+    const TaskSelf = @This();
     runtime: *Runtime,
-    async_fn_wrapper: *WrapperStruct,
+    task_wrapper: *WrapperStruct,
     mutex: std.Thread.Mutex = .{},
     cond: std.Thread.Condition = .{},
     status: TaskStatus = .Pending,
 
-    /// Awaits a future, blocking until the asynchronous operation is complete.
+    /// Joins a task, blocking until the operation is complete.
     /// Returns the result of the operation, which is of type `T`.
-    /// The future must be created with a compatible type for `T`.
-    /// Make sure that the type `T` matches the output type of the asynchronous executed function.
-    /// After awaiting, the future is cleaned up and its resources are released.
-    /// `Await` is written with a capital "A" to distinguish it from the `await` keyword in Zig, which is already reserved.
-
-    // TODO: Avoid blocking of Await
-    pub fn Await(self: *Future, T: type) T {
+    /// The task must be created with a compatible type for `T`.
+    /// Make sure that the type `T` matches the output type of the executed function.
+    /// After joining, the task is cleaned up and its resources are released.
+    pub fn join(self: *Task, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
             self.cond.wait(&self.mutex);
         }
-
-        const output: *T = @alignCast(@ptrCast(self.async_fn_wrapper.output));
+        const output: *T = @alignCast(@ptrCast(self.task_wrapper.output));
         const result = output.*;
 
-        self.async_fn_wrapper.wrapper_destroy_fn(self.async_fn_wrapper.self);
-        self.runtime.allocator.destroy(self.async_fn_wrapper);
+        self.task_wrapper.wrapper_destroy_fn(self.task_wrapper.self);
+        self.runtime.allocator.destroy(self.task_wrapper);
 
         for (self.runtime.task_queue.items, 0..) |item, idx| {
             if (item == self) {
@@ -157,7 +151,7 @@ pub const Future = struct {
     }
 };
 
-// A helper struct to encapsulate the asynchronous function and its parameters.
+// A helper struct to encapsulate the function to be run and its parameters.
 const WrapperStruct = struct {
     self: *anyopaque,
     run_fn: *const fn (*anyopaque) void,
@@ -186,7 +180,7 @@ fn workerThread(runtime: *Runtime) void {
             break;
         }
 
-        var task: ?*Future = null;
+        var task: ?*Task = null;
 
         for (runtime.task_queue.items) |t| {
             if (t.status == .Pending) {
@@ -200,7 +194,7 @@ fn workerThread(runtime: *Runtime) void {
 
         if (task) |t| {
             t.mutex.lock();
-            t.async_fn_wrapper.run_fn(t.async_fn_wrapper.self);
+            t.task_wrapper.run_fn(t.task_wrapper.self);
             t.status = .Finished;
             t.mutex.unlock();
             t.cond.broadcast();

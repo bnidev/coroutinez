@@ -1,19 +1,19 @@
-# azync
+# coroutinez
 
-[![CI](https://github.com/floscodes/azync/actions/workflows/ci.yml/badge.svg)](https://github.com/floscodes/azync/actions/workflows/ci.yml)
+[![CI](https://github.com/floscodes/coroutinez/actions/workflows/ci.yml/badge.svg)](https://github.com/floscodes/coroutinez/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-azync is a small experimental runtime for running asynchronous tasks in Zig.
+coroutinez is a small runtime for running tasks using coroutines in zig.
 
 > [!WARNING]
-> azync is still in development and is _not_ ready for production yet.
+> coroutinez is still in development and is _not_ ready for production yet.
 
 ## Minimal Example
 
 ```zig
 const std = @import("std");
-const azync = @import("azync");
-const Runtime = azync.Runtime;
+const coroutinez = @import("coroutinez");
+const Runtime = coroutinez.Runtime;
 
 fn main() void {
     const allocator = std.heap.page_allocator;
@@ -34,10 +34,9 @@ For a complete example showcasing advanced usage with dynamic allocations and mu
 
 ## Overview
 
-azync spawns as many worker threads as logical CPU cores available on your machine. These threads continuously pick up and run asynchronous tasks you spawn via `Runtime.spawn`. Finished tasks remain in the task queue until you call the `Await()` method on the associated `*Future` to retrieve the result.
+coroutinez spawns as many worker threads as logical CPU cores available on your machine. These threads continuously pick up and run asynchronous tasks you spawn via `Runtime.spawn`. Finished tasks remain in the task queue until you call the `Await()` method on the associated `*Future` to retrieve the result.
 
-> [!NOTE]
-> `Await` is written with a capital "A" to avoid clashing with Zig's reserved `await` keyword.
+> [!NOTE] > `Await` is written with a capital "A" to avoid clashing with Zig's reserved `await` keyword.
 
 You can also control the number of worker threads by initializing the runtime with a specific core count using `initWithCores()`:
 
