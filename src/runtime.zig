@@ -7,7 +7,7 @@ const CpuCountError = error{
     InvalidCpuCount,
 };
 
-/// The `Runtime` struct provides a thread pool and task management for asynchronous execution.
+/// The `Runtime` struct provides a thread pool and task management for execution of functions using coroutines.
 /// It allows spawning tasks that can be awaited, and manages the lifecycle of these tasks.
 /// The runtime can be initialized with a specific number of CPU cores, or it defaults to the number of available cores.
 /// It handles task scheduling, execution, and cleanup, ensuring that resources are properly managed.
@@ -73,9 +73,9 @@ pub const Runtime = struct {
         self.task_queue.deinit();
     }
 
-    /// Spawns an asynchronous task using the provided function `F` and parameters `params`.
+    /// Spawns a task using the provided function `F` and parameters `params`.
     /// Params must match the expected parameters of the function `F` and must be passed as a tuple.
-    /// The spawn-method returns a `Task` that can be awaited to get the result of the asynchronous operation.
+    /// The spawn-method returns a `Task` that can be joined to get the result of the operation.
     pub fn spawn(self: *Self, comptime F: anytype, params: anytype) !*Task {
         if (!self.threads_started) {
             for (self.threads) |*thread| {
@@ -129,7 +129,6 @@ pub const Task = struct {
         while (self.status != .Finished) {
             self.cond.wait(&self.mutex);
         }
-
         const output: *T = @alignCast(@ptrCast(self.task_wrapper.output));
         const result = output.*;
 
@@ -152,7 +151,7 @@ pub const Task = struct {
     }
 };
 
-// A helper struct to encapsulate the asynchronous function and its parameters.
+// A helper struct to encapsulate the function to be run and its parameters.
 const WrapperStruct = struct {
     self: *anyopaque,
     run_fn: *const fn (*anyopaque) void,
