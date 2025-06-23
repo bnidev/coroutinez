@@ -5,8 +5,6 @@
 
 coroutinez is a small runtime for running tasks using coroutines in Zig.
 
-> [!WARNING]
-> coroutinez is still in development and is _not_ ready for production yet.
 
 ## Minimal Example
 
@@ -15,17 +13,17 @@ const std = @import("std");
 const coroutinez = @import("coroutinez");
 const Runtime = coroutinez.Runtime;
 
-fn main() void {
+fn main() !void {
     const allocator = std.heap.page_allocator;
-    const rt = Runtime.init(allocator) catch unreachable;
+    const rt = try Runtime.init(allocator);
     defer rt.deinit();
 
-    const future = rt.spawn(myAsyncFunction, .{}) catch unreachable;
-    const result = future.Await(i32);
+    const task = try rt.spawn(myTaskFunction, .{});
+    const task = taak.join(i32);
     std.debug.print("Result: {d}\n", .{result});
 }
 
-fn myAsyncFunction() i32 {
+fn myTaskFunction() i32 {
     return 42;
 }
 ```
@@ -34,15 +32,12 @@ For a complete example showcasing advanced usage with dynamic allocations and mu
 
 ## Overview
 
-coroutinez spawns as many worker threads as logical CPU cores available on your machine. These threads continuously pick up and run asynchronous tasks you spawn via `Runtime.spawn`. Finished tasks remain in the task queue until you call the `Await()` method on the associated `*Future` to retrieve the result.
-
-> [!NOTE]
-> `Await` is written with a capital "A" to avoid clashing with Zig's reserved `await` keyword.
+coroutinez spawns as many worker threads as logical CPU cores available on your machine. These threads continuously pick up and run asynchronous tasks you spawn via `Runtime.spawn`. Finished tasks remain in the task queue until you call the `Await()` method on the associated `*Task` to retrieve the result.
 
 You can also control the number of worker threads by initializing the runtime with a specific core count using `initWithCores()`:
 
 ```zig
 const allocator = std.heap.page_allocator;
-const rt = Runtime.initWithCores(allocator, 16) catch unreachable;
+const rt = try Runtime.initWithCores(allocator, 16);
 defer rt.deinit();
 ```
