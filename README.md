@@ -2,7 +2,7 @@
 
 coroutinez is a small runtime for running tasks using coroutines in zig.
 
-### Example
+## Example
 
 ```zig
 const std = @import("std");
@@ -18,10 +18,10 @@ fn main() void {
     const task2 = rt.spawn(returnSlice1, .{allocator});
     const task3 = rt.spawn(returnSlice2, .{"hello", allocator});
 
-    // Make sure that you await an output type that matches the output type of the executed function!
-    const result1 = task1.Await(i32);
-    const result2 = task2.Await([]const u8);
-    const result3 = task3.Await([]const u8);
+    // Make sure that you join an output type that matches the output type of the executed function!
+    const result1 = task1.join(i32);
+    const result2 = task2.join([]const u8);
+    const result3 = task3.join([]const u8);
     defer allocator.free(result2);
     defer allocator.free(result3);
 
@@ -57,7 +57,7 @@ fn returnSlice2(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
 }
 ```
 
-coroutinez will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `Join()`method on a spawned task (which is represented by a `*Task`). You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
+**coroutinez** will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `join()`method on a spawned task (which is represented by a `*Task`). You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
 
 ```zig
 const allocator = std.heap.page_allocator;

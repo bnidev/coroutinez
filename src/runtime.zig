@@ -1,6 +1,6 @@
 const std = @import("std");
 const root = @import("root.zig");
-const TaskWrapper = @import("wrapper.zig").TaskWrapper;
+const TaskWrapper = @import("task_wrapper.zig").TaskWrapper;
 
 /// Represents an error that occurs when the CPU count is invalid.
 const CpuCountError = error{
@@ -55,7 +55,7 @@ pub const Runtime = struct {
     /// It is important to call this method to avoid memory leaks and ensure that all resources are properly released.
     pub fn deinit(self: *Self) void {
         for (self.task_queue.items) |task| {
-            _ = task.Await(*anyopaque);
+            _ = task.join(*anyopaque);
         }
 
         if (self.threads_started) {
@@ -124,7 +124,6 @@ pub const Task = struct {
     /// The task must be created with a compatible type for `T`.
     /// Make sure that the type `T` matches the output type of the executed function.
     /// After joining, the task is cleaned up and its resources are released.
-
     pub fn join(self: *Task, T: type) T {
         self.mutex.lock();
         while (self.status != .Finished) {
@@ -134,7 +133,7 @@ pub const Task = struct {
         const output: *T = @alignCast(@ptrCast(self.task_wrapper.output));
         const result = output.*;
 
-        self.task_wrapper.wrapper_destroy_fn(self.task_.self);
+        self.task_wrapper.wrapper_destroy_fn(self.task_wrapper.self);
         self.runtime.allocator.destroy(self.task_wrapper);
 
         for (self.runtime.task_queue.items, 0..) |item, idx| {
