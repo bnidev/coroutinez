@@ -1,68 +1,48 @@
 # coroutinez
 
-coroutinez is a small runtime for running tasks using coroutines in zig.
+[![CI](https://github.com/floscodes/coroutinez/actions/workflows/ci.yml/badge.svg)](https://github.com/floscodes/coroutinez/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Example
+coroutinez is a small runtime for running tasks using coroutines in Zig.
+
+> [!WARNING]
+> coroutinez is still in development and is _not_ ready for production yet.
+
+## Minimal Example
 
 ```zig
 const std = @import("std");
-const azync = @import("coroutinez");
+const coroutinez = @import("coroutinez");
 const Runtime = coroutinez.Runtime;
 
 fn main() void {
     const allocator = std.heap.page_allocator;
-    const rt = Runtime.init(allocator);
+    const rt = Runtime.init(allocator) catch unreachable;
     defer rt.deinit();
 
-    const task1 = rt.spawn(returnNumber, .{allocator});
-    const task2 = rt.spawn(returnSlice1, .{allocator});
-    const task3 = rt.spawn(returnSlice2, .{"hello", allocator});
-
-    // Make sure that you join an output type that matches the output type of the executed function!
-    const result1 = task1.join(i32);
-    const result2 = task2.join([]const u8);
-    const result3 = task3.join([]const u8);
-    defer allocator.free(result2);
-    defer allocator.free(result3);
-
-    std.debug.print("{d}", .{result1});
-    std.debug.print("{s}", .{result2});
-    std.debug.print("{s}", .{result3});
+    const future = rt.spawn(myAsyncFunction, .{}) catch unreachable;
+    const result = future.Await(i32);
+    std.debug.print("Result: {d}\n", .{result});
 }
 
-fn returnNumber() i32 {
+fn myAsyncFunction() i32 {
     return 42;
-}
-
-fn returnSlice1(allocator: std.mem.Allocator) ![]const u8 {
-
-    var str = std.ArrayList(u8).init(allocator);
-    defer str.deinit();
-
-    _ = try str.appendSlice("hello");
-    _ = try str.appendSlice(" world!");
-
-    return try str.toOwnedSlice();
-}
-
-fn returnSlice2(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
-
-    var str = std.ArrayList(u8).init(allocator);
-    defer str.deinit();
-
-    _ = try str.appendSlice(s);
-    _ = try str.appendSlice(" world!");
-
-    return try str.toOwnedSlice();
 }
 ```
 
-**coroutinez** will spawn as many threads as logical cores are available on your machine and will run worker functions that will iterate over all tasks that you spawned by calling `Runtime.spawn`. Then it will pick the next pending task. Finished tasks will remain in the task queue as long as you call the `join()`method on a spawned task (which is represented by a `*Task`). You can also spawn the threads on a chosen number of logical cores by using `initWithCores()`:
+For a complete example showcasing advanced usage with dynamic allocations and multiple parameters, see [examples/basic.zig](./examples/basic.zig).
+
+## Overview
+
+coroutinez spawns as many worker threads as logical CPU cores available on your machine. These threads continuously pick up and run asynchronous tasks you spawn via `Runtime.spawn`. Finished tasks remain in the task queue until you call the `Await()` method on the associated `*Future` to retrieve the result.
+
+> [!NOTE]
+> `Await` is written with a capital "A" to avoid clashing with Zig's reserved `await` keyword.
+
+You can also control the number of worker threads by initializing the runtime with a specific core count using `initWithCores()`:
 
 ```zig
 const allocator = std.heap.page_allocator;
-
-const rt = Runtime.initWithCores(allocator, 16);
+const rt = Runtime.initWithCores(allocator, 16) catch unreachable;
 defer rt.deinit();
-
 ```
