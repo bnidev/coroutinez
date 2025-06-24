@@ -10,14 +10,14 @@ pub fn main() !void {
     defer rt.deinit();
 
     // Spawn async tasks, passing parameters as a tuple
-    const future1 = try rt.spawn(returnNumber, .{});
-    const future2 = try rt.spawn(allocateHelloWorld, .{allocator});
-    const future3 = try rt.spawn(appendWorldToSlice, .{"hello", allocator});
+    const task1 = try rt.spawn(returnNumber, .{});
+    const task2 = try rt.spawn(allocateHelloWorld, .{allocator});
+    const task3 = try rt.spawn(appendWorldToSlice, .{"hello", allocator});
 
     // Await task results. The type passed must match the async function's return type!
-    const result1 = future1.Await(i32);
-    const result2 = future2.Await([]const u8);
-    const result3 = future3.Await([]const u8);
+    const result1 = task1.join(i32);
+    const result2 = task2.join([]const u8);
+    const result3 = task3.join([]const u8);
 
     defer allocator.free(result2);
     defer allocator.free(result3);
