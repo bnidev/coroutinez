@@ -1,20 +1,20 @@
 const std = @import("std");
-const azync = @import("azync");
-const Runtime = azync.Runtime;
+const azync = @import("coroutinez");
+const Runtime = coroutinez.Runtime;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    // Initialize the async runtime with default number of CPU cores
+    // Initialize the runtime with default number of CPU cores
     const rt = try Runtime.init(allocator);
     defer rt.deinit();
 
-    // Spawn async tasks, passing parameters as a tuple
+    // Spawn tasks, passing parameters as a tuple
     const task1 = try rt.spawn(returnNumber, .{});
     const task2 = try rt.spawn(allocateHelloWorld, .{allocator});
     const task3 = try rt.spawn(appendWorldToSlice, .{"hello", allocator});
 
-    // Await task results. The type passed must match the async function's return type!
+    // Join task results. The type passed must match the function's return type!
     const result1 = task1.join(i32);
     const result2 = task2.join([]const u8);
     const result3 = task3.join([]const u8);
@@ -28,7 +28,7 @@ pub fn main() !void {
     std.debug.print("Result 3: {s}\n", .{result3});
 }
 
-/// Returns a constant number synchronously
+/// Returns a constant number
 fn returnNumber() i32 {
     return 42;
 }
